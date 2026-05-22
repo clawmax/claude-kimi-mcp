@@ -79,7 +79,7 @@ Kimi works entirely on a named feature branch — never on `main`. Claude contro
 ### Install
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/claude-kimi-mcp.git
+git clone https://github.com/clawmax/claude-kimi-mcp.git
 cd claude-kimi-mcp
 npm install          # auto-builds TypeScript via prepare script
 ```
@@ -280,7 +280,7 @@ Kimi 完全在指定的功能分支上工作，从不直接操作 `main`。Claud
 ### 安装
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/claude-kimi-mcp.git
+git clone https://github.com/clawmax/claude-kimi-mcp.git
 cd claude-kimi-mcp
 npm install          # prepare 脚本自动构建 TypeScript
 ```
