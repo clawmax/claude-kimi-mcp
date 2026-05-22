@@ -2,23 +2,24 @@ import { execSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 
-/** 校验路径在允许的 repo 根目录内，防止路径穿越 */
 function assertSafe(repoRoot: string, filePath: string): string {
   const abs = path.resolve(repoRoot, filePath);
   if (!abs.startsWith(path.resolve(repoRoot))) {
-    throw new Error(`路径越界: ${filePath}`);
+    throw new Error(`Path traversal detected: ${filePath}`);
   }
   return abs;
 }
 
 export function readFile(repoRoot: string, filePath: string): string {
   const abs = assertSafe(repoRoot, filePath);
-  if (!fs.existsSync(abs)) return `[文件不存在: ${filePath}]`;
+  if (!fs.existsSync(abs)) return `[File not found: ${filePath}]`;
   const content = fs.readFileSync(abs, "utf-8");
-  // 超过 200 行只返回前 200 行，避免撑爆上下文
   const lines = content.split("\n");
   if (lines.length > 200) {
-    return lines.slice(0, 200).join("\n") + `\n... [截断，共 ${lines.length} 行，请用 read_file_range 读取更多]`;
+    return (
+      lines.slice(0, 200).join("\n") +
+      `\n... [truncated — ${lines.length} lines total. Use read_file_range to read more.]`
+    );
   }
   return content;
 }
@@ -30,7 +31,7 @@ export function readFileRange(
   endLine: number
 ): string {
   const abs = assertSafe(repoRoot, filePath);
-  if (!fs.existsSync(abs)) return `[文件不存在: ${filePath}]`;
+  if (!fs.existsSync(abs)) return `[File not found: ${filePath}]`;
   const lines = fs.readFileSync(abs, "utf-8").split("\n");
   return lines.slice(startLine - 1, endLine).join("\n");
 }
@@ -39,16 +40,17 @@ export function writeFile(repoRoot: string, filePath: string, content: string): 
   const abs = assertSafe(repoRoot, filePath);
   fs.mkdirSync(path.dirname(abs), { recursive: true });
   fs.writeFileSync(abs, content, "utf-8");
-  return `已写入: ${filePath}`;
+  return `Written: ${filePath}`;
 }
 
 export function listDir(repoRoot: string, dirPath: string = "."): string {
   const abs = assertSafe(repoRoot, dirPath);
-  if (!fs.existsSync(abs)) return `[目录不存在: ${dirPath}]`;
+  if (!fs.existsSync(abs)) return `[Directory not found: ${dirPath}]`;
   try {
-    const out = execSync(`find "${abs}" -maxdepth 2 -not -path "*/node_modules/*" -not -path "*/.git/*" | head -60`, {
-      encoding: "utf-8",
-    });
+    const out = execSync(
+      `find "${abs}" -maxdepth 2 -not -path "*/node_modules/*" -not -path "*/.git/*" | head -60`,
+      { encoding: "utf-8" }
+    );
     return out.trim();
   } catch (e: any) {
     return e.message;
@@ -56,11 +58,10 @@ export function listDir(repoRoot: string, dirPath: string = "."): string {
 }
 
 export function bashExec(repoRoot: string, command: string, timeoutMs = 30000): string {
-  // 禁止高危操作
   const blocked = ["rm -rf", "git push", "git reset --hard", "sudo", "curl", "wget", "npm publish"];
   for (const b of blocked) {
     if (command.includes(b)) {
-      return `[拒绝执行: 命令包含禁止操作 "${b}"]`;
+      return `[Blocked: command contains forbidden operation "${b}"]`;
     }
   }
   try {
@@ -70,9 +71,9 @@ export function bashExec(repoRoot: string, command: string, timeoutMs = 30000): 
       timeout: timeoutMs,
       stdio: ["pipe", "pipe", "pipe"],
     });
-    return out.trim() || "[命令执行成功，无输出]";
+    return out.trim() || "[Command succeeded with no output]";
   } catch (e: any) {
-    return `[错误]\nstdout: ${e.stdout || ""}\nstderr: ${e.stderr || ""}\nmessage: ${e.message}`;
+    return `[Error]\nstdout: ${e.stdout || ""}\nstderr: ${e.stderr || ""}\nmessage: ${e.message}`;
   }
 }
 
@@ -82,9 +83,8 @@ export function gitStatus(repoRoot: string): string {
 
 export function gitDiff(repoRoot: string, base = "HEAD"): string {
   const diff = bashExec(repoRoot, `git diff ${base}`);
-  // 超过 8000 字符截断
   if (diff.length > 8000) {
-    return diff.slice(0, 8000) + "\n... [diff 过长，已截断]";
+    return diff.slice(0, 8000) + "\n... [diff truncated]";
   }
   return diff;
 }
@@ -98,18 +98,17 @@ export function gitCommit(repoRoot: string, message: string): string {
   return bashExec(repoRoot, `git commit -m "${message.replace(/"/g, '\\"')}" 2>&1`);
 }
 
-/** 返回给 Kimi 的完整工具定义列表 */
 export function getSandboxToolDefinitions() {
   return [
     {
       type: "function" as const,
       function: {
         name: "read_file",
-        description: "读取代码库中的文件内容",
+        description: "Read a file from the repository",
         parameters: {
           type: "object",
           properties: {
-            file_path: { type: "string", description: "相对于 repo 根目录的文件路径" },
+            file_path: { type: "string", description: "Path relative to the repo root" },
           },
           required: ["file_path"],
         },
@@ -119,13 +118,13 @@ export function getSandboxToolDefinitions() {
       type: "function" as const,
       function: {
         name: "read_file_range",
-        description: "读取文件的指定行范围",
+        description: "Read a specific line range from a file",
         parameters: {
           type: "object",
           properties: {
             file_path: { type: "string" },
-            start_line: { type: "number", description: "起始行（1-indexed）" },
-            end_line: { type: "number", description: "结束行（含）" },
+            start_line: { type: "number", description: "Start line (1-indexed)" },
+            end_line: { type: "number", description: "End line (inclusive)" },
           },
           required: ["file_path", "start_line", "end_line"],
         },
@@ -135,12 +134,12 @@ export function getSandboxToolDefinitions() {
       type: "function" as const,
       function: {
         name: "write_file",
-        description: "写入或覆盖文件内容",
+        description: "Write or overwrite a file with the given content",
         parameters: {
           type: "object",
           properties: {
             file_path: { type: "string" },
-            content: { type: "string", description: "完整文件内容" },
+            content: { type: "string", description: "Full file content to write" },
           },
           required: ["file_path", "content"],
         },
@@ -150,11 +149,11 @@ export function getSandboxToolDefinitions() {
       type: "function" as const,
       function: {
         name: "list_dir",
-        description: "列出目录结构（最多 2 层，排除 node_modules 和 .git）",
+        description: "List directory structure (max 2 levels, excludes node_modules and .git)",
         parameters: {
           type: "object",
           properties: {
-            dir_path: { type: "string", description: "目录路径，默认为根目录" },
+            dir_path: { type: "string", description: "Directory path, defaults to repo root" },
           },
           required: [],
         },
@@ -164,11 +163,11 @@ export function getSandboxToolDefinitions() {
       type: "function" as const,
       function: {
         name: "bash_exec",
-        description: "在 repo 根目录执行 shell 命令（如跑测试、编译检查）",
+        description: "Execute a shell command in the repo root (e.g. run tests, type-check)",
         parameters: {
           type: "object",
           properties: {
-            command: { type: "string", description: "要执行的命令" },
+            command: { type: "string", description: "Shell command to execute" },
           },
           required: ["command"],
         },
@@ -178,7 +177,7 @@ export function getSandboxToolDefinitions() {
       type: "function" as const,
       function: {
         name: "git_status",
-        description: "查看当前 git 变更状态",
+        description: "Show current git working tree status",
         parameters: { type: "object", properties: {}, required: [] },
       },
     },
@@ -186,11 +185,11 @@ export function getSandboxToolDefinitions() {
       type: "function" as const,
       function: {
         name: "git_diff",
-        description: "查看当前未提交的 diff",
+        description: "Show the current uncommitted diff",
         parameters: {
           type: "object",
           properties: {
-            base: { type: "string", description: "对比基准，默认 HEAD" },
+            base: { type: "string", description: "Diff base, defaults to HEAD" },
           },
           required: [],
         },
@@ -200,11 +199,11 @@ export function getSandboxToolDefinitions() {
       type: "function" as const,
       function: {
         name: "git_commit",
-        description: "将所有变更 git add 并提交",
+        description: "Stage all changes (git add -A) and create a commit",
         parameters: {
           type: "object",
           properties: {
-            message: { type: "string", description: "提交信息" },
+            message: { type: "string", description: "Commit message" },
           },
           required: ["message"],
         },
@@ -214,11 +213,11 @@ export function getSandboxToolDefinitions() {
       type: "function" as const,
       function: {
         name: "task_done",
-        description: "宣告任务完成，返回完成摘要",
+        description: "Signal task completion and return a summary of the work done",
         parameters: {
           type: "object",
           properties: {
-            summary: { type: "string", description: "完成的工作摘要，供 Claude review 用" },
+            summary: { type: "string", description: "Summary of completed work" },
           },
           required: ["summary"],
         },
@@ -227,7 +226,6 @@ export function getSandboxToolDefinitions() {
   ];
 }
 
-/** 执行 Kimi 返回的 tool call，返回结果字符串 */
 export function executeSandboxTool(
   repoRoot: string,
   toolName: string,
@@ -251,9 +249,8 @@ export function executeSandboxTool(
     case "git_commit":
       return gitCommit(repoRoot, args.message as string);
     case "task_done":
-      // 由调用方捕获，这里直接返回以便调用方识别终止信号
       return `__TASK_DONE__:${args.summary}`;
     default:
-      return `[未知工具: ${toolName}]`;
+      return `[Unknown tool: ${toolName}]`;
   }
 }
