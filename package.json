@@ -5,7 +5,7 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "claude-kimi-mcp": "./dist/cli.js"
+    "claude-kimi-mcp": "dist/cli.js"
   },
   "files": [
     "dist/",
