@@ -79,41 +79,21 @@ Kimi works entirely on a named feature branch — never on `main`, `master`, or 
 - Claude Code CLI (`claude` in PATH)
 - Kimi API Key — get one at [platform.moonshot.cn](https://platform.moonshot.cn) (or [platform.moonshot.ai](https://platform.moonshot.ai) outside China)
 
-### Step 1 — Install
+---
+
+### Method 1 — npx (zero install, try it now)
+
+No installation required. The MCP server runs directly via npx.
+
+**Step 1** — Register with Claude Code:
 
 ```bash
-git clone https://github.com/clawmax/claude-kimi-mcp.git
-cd claude-kimi-mcp
-npm install          # auto-builds TypeScript via prepare script
+claude mcp add -s user kimi-agent --env KIMI_API_KEY=sk-your-key -- npx -y claude-kimi-mcp
 ```
 
-### Step 2 — Configure
+Replace `sk-your-key` with your actual Kimi API key. For international users, also add `--env KIMI_BASE_URL=https://api.moonshot.ai/v1`.
 
-```bash
-cp .env.example .env
-# Edit .env and set your KIMI_API_KEY
-```
-
-### Step 3 — Register with Claude Code
-
-Choose the scope that fits your team setup:
-
-| Scope flag | Where stored | Who it affects |
-|------------|--------------|----------------|
-| `-s user` | `~/.claude/` | You, in every project |
-| `-s project` | `.mcp.json` (tracked) | Everyone on your team (commit the file) |
-| `-s local` | `.mcp.json` (gitignored) | You, in current project only |
-
-```bash
-# Recommended for personal use — available in all projects
-claude mcp add -s user kimi-agent -- /absolute/path/to/claude-kimi-mcp/start.sh
-```
-
-Replace `/absolute/path/to/` with the actual path on your machine.
-
-### Step 4 — Enable Auto-Delegation
-
-Add the following block to your `~/.claude/CLAUDE.md` (create the file if it doesn't exist). This is what makes delegation happen automatically without you ever needing to mention it:
+**Step 2** — Enable auto-delegation (add to `~/.claude/CLAUDE.md`):
 
 ```markdown
 ## Auto-Delegation Rules (claude-kimi-mcp)
@@ -125,7 +105,54 @@ When the MCP tools `implement_feature`, `write_tests`, and `fix_bug` are availab
 - Never mention delegation to the user — present all results as your own work.
 ```
 
-**Restart Claude Code.** Delegation is now fully automatic.
+**Restart Claude Code.** Done.
+
+**Updating:** npx always fetches the latest version automatically — just restart Claude Code.
+
+---
+
+### Method 2 — Global install + setup wizard (recommended)
+
+**Step 1** — Install:
+
+```bash
+npm install -g claude-kimi-mcp
+```
+
+**Step 2** — Run the setup wizard (handles everything automatically):
+
+```bash
+claude-kimi-mcp setup
+```
+
+The wizard will ask for your API key, region, and scope, register the MCP server with Claude Code, and optionally add the auto-delegation rules to `~/.claude/CLAUDE.md`.
+
+**Restart Claude Code.** Done.
+
+**Updating:**
+
+```bash
+npm update -g claude-kimi-mcp
+# Then restart Claude Code
+```
+
+---
+
+### Method 3 — Source install (for contributors / custom builds)
+
+```bash
+git clone https://github.com/clawmax/claude-kimi-mcp.git
+cd claude-kimi-mcp
+npm install          # auto-builds TypeScript via prepare script
+node dist/cli.js setup
+```
+
+**Updating:**
+
+```bash
+git pull && npm install
+# Then restart Claude Code
+```
 
 ---
 
@@ -317,41 +344,21 @@ Kimi 完全在指定的功能分支上工作，从不直接操作受保护的分
 - Claude Code CLI（`claude` 在 PATH 中）
 - Kimi API Key——在 [platform.moonshot.cn](https://platform.moonshot.cn) 申请（国际版：[platform.moonshot.ai](https://platform.moonshot.ai)）
 
-### 第一步 — 安装
+---
+
+### 方式一 — npx（零安装，立即体验）
+
+无需预先安装，npx 直接拉取最新版运行。
+
+**第一步** — 注册到 Claude Code：
 
 ```bash
-git clone https://github.com/clawmax/claude-kimi-mcp.git
-cd claude-kimi-mcp
-npm install          # prepare 脚本自动构建 TypeScript
+claude mcp add -s user kimi-agent --env KIMI_API_KEY=sk-你的key -- npx -y claude-kimi-mcp
 ```
 
-### 第二步 — 配置
+将 `sk-你的key` 替换为实际的 Kimi API Key。海外用户还需追加 `--env KIMI_BASE_URL=https://api.moonshot.ai/v1`。
 
-```bash
-cp .env.example .env
-# 编辑 .env，填入你的 KIMI_API_KEY
-```
-
-### 第三步 — 注册到 Claude Code
-
-根据团队情况选择作用域：
-
-| Scope 参数 | 存储位置 | 生效范围 |
-|------------|----------|----------|
-| `-s user` | `~/.claude/` | 本人，所有项目 |
-| `-s project` | `.mcp.json`（可提交） | 团队所有成员（提交该文件即可共享） |
-| `-s local` | `.mcp.json`（已忽略） | 本人，仅当前项目 |
-
-```bash
-# 推荐个人使用——在所有项目中生效
-claude mcp add -s user kimi-agent -- /绝对路径/claude-kimi-mcp/start.sh
-```
-
-将 `/绝对路径/` 替换为实际路径，例如 `/Users/yourname/workspace/claude-kimi-mcp/start.sh`。
-
-### 第四步 — 启用自动委派
-
-将以下内容追加到 `~/.claude/CLAUDE.md`（文件不存在则新建）。这是让委派自动发生、无需用户提示的关键配置：
+**第二步** — 启用自动委派（追加到 `~/.claude/CLAUDE.md`）：
 
 ```markdown
 ## 编码任务自动委派规则（claude-kimi-mcp）
@@ -363,7 +370,54 @@ claude mcp add -s user kimi-agent -- /绝对路径/claude-kimi-mcp/start.sh
 - 全程不向用户提及委派过程，所有结果以自己的名义呈现。
 ```
 
-**重启 Claude Code**，自动委派即刻生效。
+**重启 Claude Code**，完成。
+
+**更新方式**：npx 每次启动自动拉取最新版，只需重启 Claude Code。
+
+---
+
+### 方式二 — 全局安装 + setup 向导（推荐）
+
+**第一步** — 安装：
+
+```bash
+npm install -g claude-kimi-mcp
+```
+
+**第二步** — 运行安装向导（自动完成所有配置）：
+
+```bash
+claude-kimi-mcp setup
+```
+
+向导会引导你填写 API Key、选择地区和注册范围，自动将 MCP server 注册到 Claude Code，并可选择自动追加委派规则到 `~/.claude/CLAUDE.md`。
+
+**重启 Claude Code**，完成。
+
+**更新方式**：
+
+```bash
+npm update -g claude-kimi-mcp
+# 然后重启 Claude Code
+```
+
+---
+
+### 方式三 — 源码安装（开发者 / 自定义构建）
+
+```bash
+git clone https://github.com/clawmax/claude-kimi-mcp.git
+cd claude-kimi-mcp
+npm install          # prepare 脚本自动构建 TypeScript
+node dist/cli.js setup
+```
+
+**更新方式**：
+
+```bash
+git pull && npm install
+# 然后重启 Claude Code
+```
 
 ---
 

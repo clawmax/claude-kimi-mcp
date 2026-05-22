@@ -2,7 +2,7 @@ import OpenAI from "openai";
 import { execFileSync } from "child_process";
 import { executeSandboxTool, getSandboxToolDefinitions, gitCreateBranch, gitDiff } from "./sandbox-tools.js";
 
-function detectBaseBranch(repoRoot: string): string {
+export function detectBaseBranch(repoRoot: string): string {
   // Prefer the remote default branch; fall back to common names; last resort: HEAD
   const candidates = ["main", "master", "develop", "trunk"];
   for (const name of candidates) {
@@ -16,13 +16,12 @@ function detectBaseBranch(repoRoot: string): string {
   return "HEAD";
 }
 
-const client = new OpenAI({
-  apiKey: process.env.KIMI_API_KEY!,
-  baseURL: process.env.KIMI_BASE_URL ?? "https://api.moonshot.cn/v1",
-});
-
-const MODEL = process.env.KIMI_MODEL ?? "kimi-k2.6";
-const MAX_STEPS = parseInt(process.env.KIMI_MAX_STEPS ?? "50", 10);
+function createClient() {
+  return new OpenAI({
+    apiKey: process.env.KIMI_API_KEY!,
+    baseURL: process.env.KIMI_BASE_URL ?? "https://api.moonshot.cn/v1",
+  });
+}
 
 export interface AgentResult {
   success: boolean;
@@ -55,6 +54,10 @@ export async function runKimiAgent(
   taskSpec: string,
   attempt: number = 1
 ): Promise<AgentResult> {
+  const client = createClient();
+  const MODEL = process.env.KIMI_MODEL ?? "kimi-k2.6";
+  const MAX_STEPS = parseInt(process.env.KIMI_MAX_STEPS ?? "50", 10);
+
   gitCreateBranch(repoRoot, branchName);
 
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
