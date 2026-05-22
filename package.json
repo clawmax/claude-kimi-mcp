@@ -1,7 +1,7 @@
 {
-  "name": "kimi-agent-mcp",
+  "name": "claude-kimi-mcp",
   "version": "0.1.0",
-  "description": "MCP Server: 将 Kimi K2.6 包装成 Claude Code 可调用的编码 Agent",
+  "description": "MCP Server for Claude Code: delegate coding tasks to Kimi K2.6 agent, reduce AI cost by 60–70% without sacrificing quality",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
