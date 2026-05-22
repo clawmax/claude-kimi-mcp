@@ -1,6 +1,8 @@
-import { execSync } from "child_process";
+import { execSync, execFileSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
+
+const BRANCH_NAME_RE = /^[a-zA-Z0-9._\-\/]+$/;
 
 function assertSafe(repoRoot: string, filePath: string): string {
   const abs = path.resolve(repoRoot, filePath);
@@ -47,11 +49,12 @@ export function listDir(repoRoot: string, dirPath: string = "."): string {
   const abs = assertSafe(repoRoot, dirPath);
   if (!fs.existsSync(abs)) return `[Directory not found: ${dirPath}]`;
   try {
-    const out = execSync(
-      `find "${abs}" -maxdepth 2 -not -path "*/node_modules/*" -not -path "*/.git/*" | head -60`,
-      { encoding: "utf-8" }
-    );
-    return out.trim();
+    // Use execFileSync with argument array to avoid shell injection on paths with special chars
+    const out = execFileSync("find", [abs, "-maxdepth", "2",
+      "-not", "-path", "*/node_modules/*",
+      "-not", "-path", "*/.git/*",
+    ], { encoding: "utf-8" });
+    return out.trim().split("\n").slice(0, 60).join("\n");
   } catch (e: any) {
     return e.message;
   }
@@ -90,12 +93,31 @@ export function gitDiff(repoRoot: string, base = "HEAD"): string {
 }
 
 export function gitCreateBranch(repoRoot: string, branchName: string): string {
-  return bashExec(repoRoot, `git checkout -b ${branchName} 2>&1 || git checkout ${branchName} 2>&1`);
+  if (!BRANCH_NAME_RE.test(branchName)) {
+    return `[Blocked: invalid branch name "${branchName}". Only alphanumerics, dots, hyphens, underscores, and slashes are allowed.]`;
+  }
+  try {
+    execFileSync("git", ["checkout", "-b", branchName], { cwd: repoRoot, encoding: "utf-8", stdio: "pipe" });
+    return `Switched to new branch '${branchName}'`;
+  } catch {
+    try {
+      execFileSync("git", ["checkout", branchName], { cwd: repoRoot, encoding: "utf-8", stdio: "pipe" });
+      return `Switched to branch '${branchName}'`;
+    } catch (e: any) {
+      return `[Error switching to branch: ${e.message}]`;
+    }
+  }
 }
 
 export function gitCommit(repoRoot: string, message: string): string {
-  bashExec(repoRoot, "git add -A");
-  return bashExec(repoRoot, `git commit -m "${message.replace(/"/g, '\\"')}" 2>&1`);
+  try {
+    // Use execFileSync with argument array — message is never interpolated into a shell
+    execFileSync("git", ["add", "-A"], { cwd: repoRoot, encoding: "utf-8", stdio: "pipe" });
+    const out = execFileSync("git", ["commit", "-m", message], { cwd: repoRoot, encoding: "utf-8", stdio: "pipe" });
+    return out.trim();
+  } catch (e: any) {
+    return `[Error]\n${e.stderr || e.message}`;
+  }
 }
 
 export function getSandboxToolDefinitions() {

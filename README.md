@@ -39,7 +39,7 @@ A typical software feature breaks down like this:
 ```
 You ──► Claude Code (architect + reviewer)
               │
-              │ kimi_implement_feature(spec, repo, branch)
+              │ implement_feature(spec, repo, branch)
               ▼
         Kimi K2.6 Agent  ◄──► your codebase (on a git branch)
               │  reads files, writes code, runs tests, fixes errors
@@ -105,7 +105,7 @@ Replace `/absolute/path/to/` with the actual path on your machine.
 
 ## MCP Tools
 
-### `kimi_implement_feature`
+### `implement_feature`
 
 Implement a feature on a Git branch. Kimi reads the codebase, writes the implementation, runs tests, and iterates until the task is done.
 
@@ -119,7 +119,7 @@ Implement a feature on a Git branch. Kimi reads the codebase, writes the impleme
 
 **Example prompt to Claude Code:**
 ```
-Use kimi_implement_feature to add JWT authentication to /Users/me/my-api.
+Use implement_feature to add JWT authentication to /Users/me/my-api.
 Branch: feature/jwt-auth
 Spec: implement POST /auth/login returning a signed JWT, follow the existing
 Express middleware pattern in src/middleware/, add integration tests.
@@ -127,26 +127,26 @@ Express middleware pattern in src/middleware/, add integration tests.
 
 ---
 
-### `kimi_write_tests`
+### `write_tests`
 
 Write tests for existing code, matching the project's existing test framework and style.
 
 **Example prompt:**
 ```
-Use kimi_write_tests on /Users/me/my-api, branch feature/add-tests.
+Use write_tests on /Users/me/my-api, branch feature/add-tests.
 Target: src/services/UserService.ts — cover create, update, delete,
 including error paths and edge cases.
 ```
 
 ---
 
-### `kimi_fix_bug`
+### `fix_bug`
 
 Given a bug description or stack trace, Kimi locates the root cause, fixes it, and verifies the fix with tests.
 
 **Example prompt:**
 ```
-Use kimi_fix_bug on /Users/me/my-api, branch fix/order-crash.
+Use fix_bug on /Users/me/my-api, branch fix/order-crash.
 Bug: POST /orders throws "TypeError: Cannot read property 'id' of undefined"
 at order.service.ts:45. Stack trace: [paste here]
 ```
@@ -240,7 +240,7 @@ Claude Code 是目前最强的 AI 编程助手之一。但如果把它用在所�
 ```
 你 ──► Claude Code（架构师 + 审核员）
               │
-              │ kimi_implement_feature(spec, repo, branch)
+              │ implement_feature(spec, repo, branch)
               ▼
         Kimi K2.6 Agent  ◄──► 你的代码库（在 Git 分支上）
               │  读代码、写实现、跑测试、自主修复错误
@@ -306,39 +306,39 @@ claude mcp add -s user kimi-agent -- /绝对路径/claude-kimi-mcp/start.sh
 
 ## MCP 工具
 
-### `kimi_implement_feature` — 实现功能
+### `implement_feature` — 实现功能
 
 在 Git 分支上自主实现一个功能。Kimi 读取代码库、编写实现、运行测试，迭代直到完成。
 
 **在 Claude Code 中的使用示例：**
 ```
-用 kimi_implement_feature 给 /Users/me/my-api 的 feature/jwt-auth 分支
+用 implement_feature 给 /Users/me/my-api 的 feature/jwt-auth 分支
 添加 JWT 认证。要求：实现 POST /auth/login 返回签名 JWT，
 参考 src/middleware/ 的现有 Express 中间件风格，并补充集成测试。
 ```
 
 ---
 
-### `kimi_write_tests` — 编写测试
+### `write_tests` — 编写测试
 
 为现有代码编写测试，自动匹配项目已有的测试框架和风格。
 
 **示例：**
 ```
-用 kimi_write_tests 给 /Users/me/my-api 的 feature/add-tests 分支
+用 write_tests 给 /Users/me/my-api 的 feature/add-tests 分支
 为 src/services/UserService.ts 编写测试，覆盖 create、update、delete
 方法的正常路径、边界情况和错误路径。
 ```
 
 ---
 
-### `kimi_fix_bug` — 修复 Bug
+### `fix_bug` — 修复 Bug
 
 根据 Bug 描述或错误堆栈定位根因、修复并验证。
 
 **示例：**
 ```
-用 kimi_fix_bug 在 /Users/me/my-api 的 fix/order-crash 分支修复这个 Bug：
+用 fix_bug 在 /Users/me/my-api 的 fix/order-crash 分支修复这个 Bug：
 POST /orders 报错 "TypeError: Cannot read property 'id' of undefined"
 位置在 order.service.ts:45。错误堆栈：[粘贴堆栈]
 ```

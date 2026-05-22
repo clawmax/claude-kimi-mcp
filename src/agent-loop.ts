@@ -1,5 +1,20 @@
 import OpenAI from "openai";
+import { execFileSync } from "child_process";
 import { executeSandboxTool, getSandboxToolDefinitions, gitCreateBranch, gitDiff } from "./sandbox-tools.js";
+
+function detectBaseBranch(repoRoot: string): string {
+  // Prefer the remote default branch; fall back to common names; last resort: HEAD
+  const candidates = ["main", "master", "develop", "trunk"];
+  for (const name of candidates) {
+    try {
+      execFileSync("git", ["rev-parse", "--verify", name], { cwd: repoRoot, stdio: "pipe" });
+      return name;
+    } catch {
+      // branch doesn't exist, try next
+    }
+  }
+  return "HEAD";
+}
 
 const client = new OpenAI({
   apiKey: process.env.KIMI_API_KEY!,
@@ -99,7 +114,8 @@ export async function runKimiAgent(
     finalSummary = `Execution error: ${e.message}`;
   }
 
-  const diff = gitDiff(repoRoot, "main");
+  const baseBranch = detectBaseBranch(repoRoot);
+  const diff = gitDiff(repoRoot, baseBranch);
   const hasChanges = diff.trim().length > 0 && diff !== "[No changes]";
 
   // Trigger fallback on attempt >= 2 with no meaningful changes or execution error
