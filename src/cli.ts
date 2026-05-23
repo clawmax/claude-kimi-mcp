@@ -96,6 +96,94 @@ When the MCP tools \`implement_feature\`, \`write_tests\`, and \`fix_bug\` are a
 - Never mention delegation to the user — present all results as your own work.
 `;
 
+async function runUninstall() {
+  console.log("\n=== claude-kimi-mcp Uninstall Wizard ===\n");
+
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+
+  try {
+    // Step 1: Remove MCP server registration from all possible scopes
+    const claudeAvailable = (() => {
+      try { execFileSync("claude", ["--version"], { stdio: "pipe" }); return true; }
+      catch { return false; }
+    })();
+
+    if (claudeAvailable) {
+      const scopes = ["user", "project", "local"];
+      let removed = false;
+      for (const scope of scopes) {
+        try {
+          execFileSync("claude", ["mcp", "remove", "-s", scope, "kimi-agent"], { stdio: "pipe" });
+          console.log(`✓ Removed MCP server kimi-agent (scope: ${scope}).`);
+          removed = true;
+        } catch {
+          // Ignore errors — server may not be registered in this scope
+        }
+      }
+      if (!removed) {
+        console.log("ℹ  MCP server kimi-agent not found in any scope — skipped.");
+      }
+    } else {
+      console.log("⚠  claude command not found. Please remove the MCP server manually:");
+      console.log("   claude mcp remove -s <scope> kimi-agent");
+    }
+
+    // Step 2: Remove delegation rules from CLAUDE.md
+    if (fs.existsSync(CLAUDE_MD_PATH)) {
+      const content = fs.readFileSync(CLAUDE_MD_PATH, "utf-8");
+      const marker = "## Auto-Delegation Rules (claude-kimi-mcp)";
+      const idx = content.indexOf(marker);
+
+      if (idx !== -1) {
+        // Find the end of this section (next heading or EOF)
+        let endIdx = content.length;
+        const nextHeading = content.indexOf("\n## ", idx + marker.length);
+        if (nextHeading !== -1) {
+          endIdx = nextHeading + 1; // include the newline before the next heading
+        }
+
+        // Remove the section, trimming surrounding blank lines
+        let before = content.slice(0, idx);
+        let after = content.slice(endIdx);
+        before = before.replace(/\n+$/g, "\n");
+        after = after.replace(/^\n+/g, "\n");
+
+        const newContent = before + after;
+        if (newContent.trim()) {
+          fs.writeFileSync(CLAUDE_MD_PATH, newContent);
+        } else {
+          fs.unlinkSync(CLAUDE_MD_PATH);
+        }
+        console.log("✓ Removed auto-delegation rules from ~/.claude/CLAUDE.md.");
+      } else {
+        console.log("ℹ  Auto-delegation rules not found in CLAUDE.md — skipped.");
+      }
+    } else {
+      console.log("ℹ  ~/.claude/CLAUDE.md does not exist — skipped.");
+    }
+
+    // Step 3: Optionally remove global config directory
+    if (fs.existsSync(GLOBAL_CONFIG_DIR)) {
+      const delConfig = (await prompt(rl, "\nDelete global config directory ~/.claude-kimi-mcp? [y/N]: "))
+        .trim()
+        .toLowerCase();
+
+      if (delConfig === "y") {
+        fs.rmSync(GLOBAL_CONFIG_DIR, { recursive: true, force: true });
+        console.log("✓ Deleted ~/.claude-kimi-mcp.");
+      } else {
+        console.log("ℹ  Kept ~/.claude-kimi-mcp (you can delete it manually later).");
+      }
+    }
+
+    console.log("\n✓ Uninstall complete.\n");
+    console.log("Note: If you installed the package globally, also run:");
+    console.log("  npm uninstall -g claude-kimi-mcp\n");
+  } finally {
+    rl.close();
+  }
+}
+
 async function runSetup() {
   console.log("\n=== claude-kimi-mcp Setup Wizard ===\n");
 
@@ -205,6 +293,11 @@ async function main() {
 
   if (cmd === "setup") {
     await runSetup();
+    return;
+  }
+
+  if (cmd === "uninstall") {
+    await runUninstall();
     return;
   }
 
